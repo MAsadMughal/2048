@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <title>2048 Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      min-height: 100vh;
+      background: #faf8ef;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      margin: 5px 0;
+      font-size: clamp(20px, 2.5vw, 50px);
+      color: #776e65;
+    }
+    .score, .high-score {
+      font-size: clamp(10px, 2vw, 14px);
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .controls {
+      display: none;
+    }
+   
+
+    @media (max-width: 2560px) {
+    .game-container{
+    width: 50vw;
+        margin-top: 10vh;
+    }
+    }
+    @media (max-width: 768px) {
+      .controls {
+        display: grid;
+        grid-template-areas:
+          ". up ."
+          "left down right";
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+        margin-top: 5px;
+        justify-items: center;
+        width: 100%;
+        background: #faf8ef;
+        padding: 6px 10px 10px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 5;
+      }
+      .controls button {
+        padding: 6px;
+        cursor: pointer;
+        font-size: 5vw;
+        border: none;
+        border-radius: 10px;
+        background: #8f7a66;
+        color: white;
+        width: 100%;
+        max-width: 60px;
+        aspect-ratio: 1/1;
+        transition: background 0.3s;
+      }
+      .controls button:hover {
+        background: #a58e7a;
+      }  .game-container {
+            margin-top: 0px;
+        }
+      .up    { grid-area: up;    }
+      .down  { grid-area: down;  }
+      .left  { grid-area: left;  }
+      .right { grid-area: right; }
+    }
+    @media (max-width: 650px) {
+        .game-container {
+            margin-top: 0px;
+        }
+}
+    @media (max-width: 420px) {
+        .game-container {
+            margin-top: 20px;
+        }
+}
+    @media (max-width: 350px) {
+        .game-container {
+            margin-top: 80px;
+        }
+      .controls button {
+        padding: 6px;
+        font-size: 7vw;
+    }}
+   
+    .game-container {
+      background: #bbada0;
+      border-radius: 10px;
+      padding: 5px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .tile {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #cdc1b4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: clamp(14px, 5vw, 28px);
+      font-weight: bold;
+      color: #776e65;
+      border-radius: 5px;
+      position: relative;
+    }
+    @keyframes glitter {
+      0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); transform: scale(1); }
+      50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); transform: scale(1.05); }
+      100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); transform: scale(1); }
+    }button {
+  -webkit-tap-highlight-color: transparent; /* For iOS Safari/Android Chrome */
+  outline: none; /* Optional: removes focus outline */
+}
+    .glitter {
+      animation: glitter .25s;
+    }
+    .tile-2 { background: #eee4da; }
+    .tile-4 { background: #ede0c8; }
+    .tile-8 { background: #f2b179; color: white; }
+    .tile-16 { background: #f59563; color: white; }
+    .tile-32 { background: #f67c5f; color: white; }
+    .tile-64 { background: #f65e3b; color: white; }
+    .tile-128 { background: #edcf72; color: white; }
+    .tile-256 { background: #edcc61; color: white; }
+    .tile-512 { background: #edc850; color: white; }
+    .tile-1024 { background: #edc53f; color: white; }
+    .tile-2048 { background: #edc22e; color: white; }
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 90%;
+      text-align: center;
+    }
+    .modal-content h2 {
+      margin-top: 0;
+    }
+  
+  </style>
+</head>
+<body>
+  <div class="modal" id="guideModal">
+    <div class="modal-content">
+      <h2>How to Play</h2>
+      <p>Slide tiles with the same number to combine them. Try to reach 2048!</p>
+      <p>Use arrow keys on desktop or swipe/buttons on mobile to move tiles.</p>
+      <button onclick="closeModal(); resetGame();">Start Game</button>
+    </div>
+  </div>
+
+  <h1>2048</h1>
+  <div class="score">Score: <span id="score">0</span></div>
+  <div class="high-score">High Score: <span id="highScore">0</span></div>
+  <div class="game-container" id="grid"></div>
+  <div class="controls">
+    <button class="up" onclick="move('up')"><i class="fa-solid fa-arrow-up"></i></button>
+<button class="down" onclick="move('down')"><i class="fa-solid fa-arrow-down"></i></button>
+<button class="left" onclick="move('left')"><i class="fa-solid fa-arrow-left"></i></button>
+<button class="right" onclick="move('right')"><i class="fa-solid fa-arrow-right"></i></button>
+
+    
+  </div>
+
+  <audio id="moveSound" src="move.mp3" preload="auto"></audio>
+  <audio id="overSound" src="over.mp3" preload="auto"></audio>
+  <script>
+    
+    const grid = document.getElementById('grid');
+    const scoreDisplay = document.getElementById('score');
+    const highScoreDisplay = document.getElementById('highScore');
+    const moveSound = document.getElementById('moveSound');
+    const overSound = document.getElementById('overSound');
+    const size = 4;
+    let tiles = [];
+    let score = 0;
+    let highScore = localStorage.getItem('highScore') || 0;
+
+    highScoreDisplay.textContent = highScore;
+
+    function createGrid() {
+      tiles = Array(size).fill().map(() => Array(size).fill(0));
+      addRandomTile();
+      addRandomTile();
+      score = 0;
+      drawGrid();
+    }
+
+    function resetGame() {
+      createGrid();
+    }
+
+    function drawGrid() {
+      grid.innerHTML = '';
+      let flat = tiles.flat();
+      let maxVal = Math.max(...flat);
+      let maxCount = flat.filter(v => v === maxVal).length;
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          const tile = document.createElement('div');
+          const value = tiles[r][c];
+          tile.className = 'tile';
+          if (value) tile.classList.add(`tile-${value}`);
+          if (value === maxVal && maxVal >= 4 && maxCount === 1) {
+            tile.classList.add('glitter');
+          }
+          tile.textContent = value || '';
+          grid.appendChild(tile);
+        }
+      }
+
+      scoreDisplay.textContent = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+        highScoreDisplay.textContent = highScore;
+      }
+    }
+
+    function addRandomTile() {
+      const empty = [];
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (tiles[r][c] === 0) empty.push([r, c]);
+        }
+      }
+      if (empty.length > 0) {
+        const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+        tiles[r][c] = Math.random() < 0.9 ? 2 : 4;
+      }
+    }
+
+    function move(direction) {
+      let moved = false;
+
+      function compress(row) {
+        let newRow = row.filter(val => val);
+        while (newRow.length < size) newRow.push(0);
+        return newRow;
+      }
+
+      function merge(row) {
+        for (let i = 0; i < size - 1; i++) {
+          if (row[i] && row[i] === row[i + 1]) {
+            row[i] *= 2;
+            score += row[i];
+            row[i + 1] = 0;
+          }
+        }
+        return compress(row);
+      }
+
+      if (direction === 'left' || direction === 'right') {
+        for (let r = 0; r < size; r++) {
+          let row = tiles[r].slice();
+          if (direction === 'right') row.reverse();
+          let newRow = merge(compress(row));
+          if (direction === 'right') newRow.reverse();
+          if (tiles[r].toString() !== newRow.toString()) moved = true;
+          tiles[r] = newRow;
+        }
+      } else {
+        for (let c = 0; c < size; c++) {
+          let col = tiles.map(row => row[c]);
+          if (direction === 'down') col.reverse();
+          let newCol = merge(compress(col));
+          if (direction === 'down') newCol.reverse();
+          for (let r = 0; r < size; r++) {
+            if (tiles[r][c] !== newCol[r]) moved = true;
+            tiles[r][c] = newCol[r];
+          }
+        }
+      }
+
+      if (moved) {
+        moveSound.currentTime = 0;
+        moveSound.play();
+        addRandomTile();
+        drawGrid();
+        checkGameOver();
+      }
+    }
+
+    function checkGameOver() {
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (tiles[r][c] === 0) return;
+          if (c < size - 1 && tiles[r][c] === tiles[r][c + 1]) return;
+          if (r < size - 1 && tiles[r][c] === tiles[r + 1][c]) return;
+        }
+      }
+      overSound.play();
+      alert("Game Over! Final Score: " + score);
+    }
+
+    function closeModal() {
+      document.getElementById('guideModal').style.display = 'none';
+    }
+
+    document.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowUp': move('up'); break;
+        case 'ArrowDown': move('down'); break;
+        case 'ArrowLeft': move('left'); break;
+        case 'ArrowRight': move('right'); break;
+      }
+    });
+
+    createGrid();
+  </script>
+</body>
+</html>
